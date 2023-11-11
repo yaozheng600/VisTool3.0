@@ -14,6 +14,7 @@ import dash_daq as daq
 from dash_iconify import DashIconify
 
 app = Dash(__name__)
+server = app.server
 
 run_in_process = dmc.Alert(
     "The anonymization may take some time, please be patient.",
