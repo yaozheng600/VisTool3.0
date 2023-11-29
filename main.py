@@ -1,4 +1,5 @@
 from io import StringIO
+from multiprocessing import Process, Manager
 import dash
 import pandas as pd
 import math
@@ -16,20 +17,8 @@ from dash_iconify import DashIconify
 app = Dash(__name__)
 server = app.server
 
-run_in_process = dmc.Alert(
-    "The anonymization may take some time, please be patient.",
-    title="In Processing ...",
-    color="violet",
-    duration=3000,
-    hide=True,
-)
-run_finish = dmc.Alert(
-"The anonymization is finished, you may see the result in the scatter plot.",
-    title="Success!",
-    color="green",
-    duration=5000,
-    hide=True,
-)
+app.title='VisTool'
+
 data_uploader_button = dmc.Button(
     "Upload your data file here( .csv)",
     leftIcon=DashIconify(icon='solar:upload-linear'),
@@ -40,6 +29,25 @@ data_uploader = dcc.Upload(
     multiple=False,  # 只允许上传一个文件
     accept='.csv' # 限制上传的文件类型为 .csv
 )
+
+notify_done = dmc.Notification(
+        title="Done!",
+        id="anony-done",
+        action="hide",
+        autoClose=False,
+        color='orange',
+        message="The anonymization process is done! Now you can check the solutions in the scatter plot.",
+        icon=DashIconify(icon="ic:round-celebration"))
+
+notify_run = dmc.Notification(
+        title="In Processing...",
+        id="anony-run",
+        action="show",
+        autoClose=False,
+        color='green',
+        loading=True,
+        disallowClose=True,
+        message="The anonymization may take some time, please be patient.")
 
 run_button = dmc.Button("Run Anonymization",leftIcon=DashIconify(icon='icomoon-free:switch'))
 
@@ -64,9 +72,8 @@ confirm_modal = dmc.Modal(
         )
     ],
 )
-
-SA_selector = dmc.Tooltip(children=[dmc.Select(
-    label='Select Sensitive Attribute',
+SA_selector = dmc.Select(
+    label='Sensitive Attribute',
     placeholder='Select one',
     id='SA_selector',
     searchable=True,
@@ -74,17 +81,16 @@ SA_selector = dmc.Tooltip(children=[dmc.Select(
     nothingFound="No options found",
     icon=DashIconify(icon='bxs:lock'),
     style={"width": 200},
-)],
-    multiline=True,
-    width=220,
-    withArrow=True,
-    transition="pop-top-right",
-    color='blue',
-    position='right',
-    transitionDuration=200,
-    label="""
-    You must select one attribute here. This attribute will be protected in the anonymization process and won't be blurred.
-    """,
+)
+
+more_settings_button = dmc.Button("more settings",variant='subtle',leftIcon=DashIconify(icon="fluent:settings-32-regular"),)
+more_settings = dmc.Drawer(
+            children=[SA_selector],
+            title="More Settings",
+            id="more_settings",
+            padding="md",
+            size=450,
+            zIndex=10000,
 )
 
 QIs_selector = dmc.MultiSelect(
@@ -102,8 +108,7 @@ footer= dmc.Footer(
     children=[dmc.Text("Master Project of Zheng Yao")],
     style={"backgroundColor": "#1688FF",'color':'white'},
 )
-app.layout = dmc.Grid(children=[
-    footer,
+app.layout = dmc.NotificationsProvider(dmc.Grid(children=[
     dmc.Col(dmc.Navbar(
         width={"base": 450},
         children=[
@@ -111,15 +116,17 @@ app.layout = dmc.Grid(children=[
             dmc.Text("VisTool", color="blue",weight=700),
             dmc.Title("Welcome to the Data Anonymization Tool",order=1),
             dmc.Text("""
-            Upload a data set which you want to anonymize. You must select one sensitive attribute,
-             which will contain 100% information after anonymization.
+            Upload a data set which you want to anonymize. Select the atrributes you want to publish, then run the anonymization. 
+            You will see different anonymization solutions in the scatter plot, each point of which is an solution. Click the point to check the 
+            anonymized data!
             """,weight=200),
             data_uploader,
             QIs_selector,
-            SA_selector,
+            more_settings_button,
+            more_settings,
             run_button,
-            run_in_process,
-            run_finish,
+            notify_run,
+            notify_done,
             confirm_modal,
             html.Div(id='test',children=[])],
             align="flex-start",
@@ -128,9 +135,23 @@ app.layout = dmc.Grid(children=[
         ],
     ),
         span=4),
-    dmc.Col(dmc.Stack([dmc.Title('Uploaded Data',order=4),
+    dmc.Col(dmc.Stack([html.Div(id='table_title'),
                        html.Div(id='table'),
-                       dmc.Group([dcc.Graph(id='scatterplot'),
+                       dmc.Group([dmc.Tooltip(children=[dcc.Graph(id='scatterplot')],
+                                              multiline=True,
+                                              width=420,
+                                              withArrow=True,
+                                              transition="pop-top-right",
+                                              color='blue',
+                                              position='top-start',
+                                              offset=-90,
+                                              transitionDuration=1000,
+                                              label="""
+                                              After anonymization, please click a point to see the anonymized data.
+                                              Each point of the plot indicates an unique anonymization solution.
+                                              You can also check the privacy and information loss of the selected point.
+                                              """,
+                                              ),
                                   dmc.Stack([daq.Gauge(id='Indicator_U',
                                                        color={"gradient":True,"ranges":{"green":[0,0.6],"yellow":[0.6,0.8],"red":[0.8,1]}},
                                                        size=140,
@@ -155,7 +176,8 @@ app.layout = dmc.Grid(children=[
     align="flex-start",
     gutter="xl",
     grow=True,
-)
+),
+position='bottom-left',zIndex=10000,transitionDuration=500)
 
 def table(df,id='spreadsheet'):
     return dash_table.DataTable(
@@ -177,6 +199,14 @@ def table(df,id='spreadsheet'):
             'fontWeight': 'bold'
         }
     )
+
+@app.callback(
+    Output("more_settings", "opened"),
+    Input(more_settings_button, "n_clicks"),
+    prevent_initial_call=True,
+)
+def drawer(n_clicks):
+    return True
 
 @app.callback(
     Output('anony_table','children'),
@@ -203,7 +233,10 @@ def update_anony_sheet(click_data,SA,QIs,contents):
         return dash.no_update
 
 @app.callback(Output('table', 'children'),
-          Input(data_uploader, 'contents'),)
+              Output('table_title','children'),
+              Input(data_uploader, 'contents'),
+              prevent_initial_call=True,
+              )
 def update_spreadsheet(contents):
     if contents is not None:
         content_type, content_string = contents.split(',')
@@ -213,9 +246,9 @@ def update_spreadsheet(contents):
             # 解析 .csv 文件
             df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
             df = df.drop(df.columns[0], axis=1)
-            return  table(df)
+            return  table(df),dmc.Title('Uploaded Data',order=4)
         except Exception as e:
-            return dmc.Alert(e, title="Error!", color="red")
+            return dmc.Alert(e, title="Error!", color="red"),dmc.Title('Uploaded Data',order=4)
 
 def anonymization(data,QIs,SA,method,parameters):
     def check_dtype(df):
@@ -304,20 +337,28 @@ def update_QIs_selector(contents):
         df = df.drop(df.columns[0], axis=1)
         return df.columns,df.columns
     return [],[]
+
 @app.callback(
     Output('SA_selector','data'),
+    Output('SA_selector','value'),
     Input(QIs_selector,'value'),
     prevent_initial_call=True,
 )
-def update_SA_selector(value):
-    if value is not None:
-        return value
+def update_SA_selector(QIs):
+    if QIs:
+        return QIs,QIs[-1]
     else:
-        return []
+        return dash.no_update,dash.no_update
+
+
 @app.callback(
     Output('scatterplot','figure'),
     Output(run_button,'loading'),
-    Output(run_finish,'hide'),
+    Output(notify_done,'action'),
+    Output(notify_run,'action'),
+    Output(QIs_selector, 'disabled'),
+    Output(more_settings_button, 'disabled'),
+    Output(data_uploader, 'disabled'),
     Input(run_button,'n_clicks'),
     State('SA_selector','value'),
     State(QIs_selector,'value'),
@@ -334,7 +375,7 @@ def run_anonymization(n_clicks,SA,QIs,contents):
         info = Auto_PCC(df,QIs,SA)
         fig = px.scatter(info, x="P_loss", y="U_loss",hover_data=['k','l','t','method','P_loss','U_loss'],range_x=[0,1],range_y=[0,1])
         fig.update_layout(
-            title_text='We provide here several anonymization solutions. Click the points to select one',
+            title_text='Scatter Plot of different anonymization solutions',
             title_font=dict(size=18, family='Arial', color='black'),
             xaxis_title='Privacy Loss',
             yaxis_title='Information Loss',
@@ -344,9 +385,9 @@ def run_anonymization(n_clicks,SA,QIs,contents):
             hovertemplate='This solution may cause:<br>Privacy Loss: %{x}<br>Information Loss: %{y}',
             marker=dict(color='rgb(22, 136, 255)')
         )
-        return fig,False,False
+        return fig,False,'show','hide',False,False,False
     else:
-        return { 'data': [], 'layout': {}, 'frames': [],},False,False
+        return { 'data': [], 'layout': {}, 'frames': [],},False,dash.no_update,dash.no_update,dash.no_update,dash.no_update,dash.no_update
 
 @app.callback(
     Output('Indicator_U','value'),
@@ -376,13 +417,18 @@ def disable_run_btn(sa,QIs,contents):
 
 @app.callback(
     Output(run_button,'loading',allow_duplicate=True),
-    Output(run_in_process,'hide'),
+    Output(notify_run,'action',allow_duplicate=True),
+    Output(notify_done,'action',allow_duplicate=True),
+    Output(QIs_selector,'disabled',allow_duplicate=True),
+    Output(more_settings_button,'disabled',allow_duplicate=True),
+    Output(data_uploader,'disabled',allow_duplicate=True),
     Input(run_button,'n_clicks'),
     prevent_initial_call=True,
 )
 def loading_run_btn(n_clicks):
+
     if n_clicks is not None:
-        return True,False
+        return True,'show','hide',True,True,True
 
 @app.callback(
     Output(confirm_modal,'opened'),
