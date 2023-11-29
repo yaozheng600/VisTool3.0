@@ -1,5 +1,4 @@
 from io import StringIO
-from multiprocessing import Process, Manager
 import dash
 import pandas as pd
 import math
