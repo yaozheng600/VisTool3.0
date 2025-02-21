@@ -54,7 +54,7 @@ Results show that **VisTool** provides a more effective and user-friendly method
 
 ## 📌 Repository Contents
 - **`Anony/`** - Source code for VisTool
-
+- **`main.py/`** - Dashboard of VisTool
 - **`README.md`** - Project overview (this file)
 
 
