@@ -4,7 +4,7 @@
 **Research Group:** Human-Centered Computing (HCC)  
 **Author:** Zheng Yao  
 **Supervisors:** Dr. Daniel Franzen, Prof. Dr. C. Müller-Birn, Prof. Dr. Volker Roth  
-**Date:** February 21, 2025  
+**Date:** February 21, 2024  
 
 ---
 
