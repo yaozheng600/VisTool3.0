@@ -53,32 +53,10 @@ Results show that **VisTool** provides a more effective and user-friendly method
 ---
 
 ## 📌 Repository Contents
-- **`src/`** - Source code for VisTool
-- **`data/`** - Sample datasets used in evaluation
-- **`docs/`** - Thesis documentation and related materials
+- **`Anony/`** - Source code for VisTool
+
 - **`README.md`** - Project overview (this file)
 
----
-
-## 📥 Installation & Usage
-### Requirements
-- Python 3.x
-- Pandas, NumPy, Matplotlib, Seaborn
-
-### Setup
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/yourusername/VisTool.git
-   cd VisTool
-   ```
-2. Install dependencies:
-   ```sh
-   pip install -r requirements.txt
-   ```
-3. Run the tool:
-   ```sh
-   python main.py
-   ```
 
 ---
 
@@ -89,7 +67,7 @@ This project is licensed under the MIT License.
 
 ## ✉ Contact
 For any inquiries, feel free to contact me at:  
-📧 Email: zheng.yao@fu-berlin.de
+📧 Email: zheng.yao@gmx.de
 
 ---
 
