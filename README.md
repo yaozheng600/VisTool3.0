@@ -41,7 +41,20 @@ This research addresses the gap in visualization-supported privacy-utility trade
 - **Interactive UI** for selecting anonymization strategies
 
 ---
+## 🏗 Technology Stack
 
+The project was implemented using the following technologies:
+
+- **Programming Language** Python 3.x
+
+- **Frameworks & Libraries** Pandas, NumPy, Matplotlib, Seaborn, Scikit-learn
+
+- **Data Processing** Mondrian Algorithm for anonymization, Privacy Criteria Control (PCC)
+
+- **Visualization** Matplotlib, Seaborn for data representation
+
+- **Development Tools** Jupyter Notebook, PyCharm, Git for version control
+---
 ## 📊 Evaluation & Results
 The effectiveness of **VisTool** was assessed through:
 - **Case Studies:** Testing with various datasets to analyze the distribution of trade-offs.
