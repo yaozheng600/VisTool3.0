@@ -47,7 +47,7 @@ The project was implemented using the following technologies:
 
 - **Programming Language** Python 3.x
 
-- **Frameworks & Libraries** Pandas, NumPy, Matplotlib, Seaborn, Scikit-learn
+- **Frameworks & Libraries** Pandas, NumPy, Matplotlib, Seaborn, Scikit-learn, Streamlit, Plotly
 
 - **Data Processing** Mondrian Algorithm for anonymization, Privacy Criteria Control (PCC)
 
